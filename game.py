@@ -18,7 +18,7 @@ ATTEMPTS = 200
 ### FUNCTIONS ###
 
 # This generation function was inspired by https://journal.stuffwithstuff.com/2014/12/21/rooms-and-mazes/
-# MUST BE ODD-SIZED DIMENSIONS
+# MUST BE ODD-SIZED DIMENSIONS LARGER THAN 100 x 100
 def generate_map(xdist, ydist):
 	"""
 	Takes in the x and y distances for the map to be generated and returns a generated map
