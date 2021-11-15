@@ -9,9 +9,11 @@ import random
 CAMERAX = 800
 CAMERAY = 600
 
-# These two should be integers between 1 and 100
-MAXROOMSCALEX = 10
-MAXROOMSCALEY = 10
+# These two should be integers between 1 and 100 and divide evenly into the used dimensions of the map
+MAXROOMSCALEX = 20
+MAXROOMSCALEY = 20
+
+ATTEMPTS = 200
 
 ### FUNCTIONS ###
 
@@ -28,27 +30,28 @@ def generate_map(xdist, ydist):
 		map.append([])
 		for x in range(xdist):
 			map[y].append(0)
-
+	#print(map)
 	# Go through and attempt to add a randomly sized room at each point, deleting it if it doesn't fit
-	for y in range(ydist):
-		for x in range(xdist):
-			room_x = random.randint(2,xdist//MAXROOMSCALEX)
-			room_y = random.randint(2,ydist//MAXROOMSCALEY)
-			# Test if this room conflicts
-			overlaps = False
-			
-			
-			for y_check in range(y, y + room_y):
-				for x_check in range(x, x + room_x):
-					if map[y_check][x_check] != 0:
-						overlaps = True
+	for attempt_num in range(ATTEMPTS):
+		x = random.randint(1, xdist-1)
+		y = random.randint(1, ydist-1)
+		room_x = random.randint(2,xdist//MAXROOMSCALEX)
+		room_y = random.randint(2,ydist//MAXROOMSCALEY)
+		# Test if this room conflicts
+		overlaps = False
 
-			# If it doesn't conflict, change all squares to 1
+		for y_check in range(y - 1, y + room_y + 1):
+			for x_check in range(x - 1, x + room_x + 1):
+				if not (y_check<ydist and x_check<xdist):
+					overlaps = True
+				elif map[y_check][x_check] != 0:
+					overlaps = True
+
+		# If it doesn't conflict, change all squares to 1
+		if not overlaps:
 			for y_repl in range(y, y + room_y):
 				for x_repl in range(x, x + room_x):
 					map[y_repl][x_repl] = 1
-
-
 
 
 	return map
@@ -58,10 +61,14 @@ def generate_map(xdist, ydist):
 
 ### MAIN CODE BEGINS ###
 
+for line in generate_map(100, 100):
+	print(line)
+
+
 camera = gamebox.Camera(CAMERAX, CAMERAY)
 camera.y = 0
 
-print(generate_map(11,11))
+
 
 
 
