@@ -10,15 +10,11 @@ import sys
 
 sys.setrecursionlimit(10**6)
 
-# The map values mean the following:
-# 0 - empty
-# 1 - wall
-# up down left right
-# 69 will be a full block
-
 ### CONTANTS ###
 
 GAMENAME = "Frustration Factor"
+
+ENEMY_RANGE = 10
 
 FRAME_SKIP = 10
 
@@ -373,32 +369,33 @@ def tick(keys):
 		for enemy in enemies:
 			camera.draw(gamebox.from_color(enemy.curr_square[0] * BLOCKSIZE, enemy.curr_square[1] * BLOCKSIZE, "green", 20, 20))
 
-			if dist_tuples(enemy.curr_square,(character.x / BLOCKSIZE, character.y / BLOCKSIZE)) <= 5 and can_shoot:
+			if dist_tuples(enemy.curr_square,(character.x / BLOCKSIZE, character.y / BLOCKSIZE)) <= 10 and can_shoot:
+				target_x = (enemy.curr_square[0] * BLOCKSIZE - character.x) / dist_tuples((enemy.curr_square[0] * BLOCKSIZE, enemy.curr_square[1] * BLOCKSIZE),(character.x, character.y)) * ENEMY_RANGE
+				target_y = (enemy.curr_square[1] * BLOCKSIZE - character.y) / dist_tuples((enemy.curr_square[0] * BLOCKSIZE, enemy.curr_square[1] * BLOCKSIZE),(character.x, character.y)) * ENEMY_RANGE
 				enemy_projectiles.append(Projectile(20, (enemy.curr_square[0] * BLOCKSIZE, enemy.curr_square[1] * BLOCKSIZE), (character.x, character.y)))
+		
 		to_remove_proj = []
 		for proj in enemy_projectiles:
 			removed = False
-			if proj.curr_pos != proj.target_pos:
-				curr_x, curr_y = proj.curr_pos[0], proj.curr_pos[1] 
-				tar_x, tar_y = proj.target_pos[0], proj.target_pos[1]
-				final_x, final_y = 0, 0
-				
-				if curr_x < tar_x:
-					final_x += round(PROJ_SPEED / math.sqrt(((tar_y - curr_y / (tar_x - curr_x)) ** 2 + 1  )))
-				elif curr_x > tar_x:
-					final_x -= round(PROJ_SPEED / math.sqrt(((tar_y - curr_y / (tar_x - curr_x)) ** 2 + 1  )))
-				else:
-					final_x = 0
 
-				if curr_y < tar_y:
-					final_y += round(PROJ_SPEED / math.sqrt(((tar_x - curr_x / (tar_y - curr_y)) ** 2 + 1  )))
-				elif curr_y > tar_y:
-					final_y -= round(PROJ_SPEED / math.sqrt(((tar_x - curr_x / (tar_y - curr_y)) ** 2 + 1  )))
-				else:
-					final_y = 0
+			curr_x, curr_y = proj.curr_pos[0], proj.curr_pos[1] 
+			tar_x, tar_y = proj.target_pos[0], proj.target_pos[1]
+
+			final_x, final_y = 0, 0
+			
+			if dist_tuples(proj.curr_pos,(character.x, character.y)) <= CHARACTERSIZE // 2:
+				current_health -= proj.damage
+
+			total_dist = ((tar_y - curr_y)**2 + (tar_x - curr_x)**2) ** 0.5
+
+			if total_dist >= PROJ_SPEED:
+				dy = (tar_y - curr_y) / total_dist * PROJ_SPEED
+				dx = (tar_x - curr_x) / total_dist * PROJ_SPEED
+
+				final_x += round(dx)
+				final_y += round(dy)
 
 				proj.curr_pos = (curr_x + final_x, curr_y + final_y)
-
 				camera.draw(gamebox.from_color(proj.curr_pos[0], proj.curr_pos[1], "purple", 5, 5))
 			else:
 				to_remove_proj.append(proj)
@@ -427,6 +424,8 @@ def tick(keys):
 		health_bar.y = camera.y - 250
 		health_bar.x = camera.x - 250
 
+		score_text = gamebox.from_text(camera.x + 350, camera.y + 250, str(score), 50, "red", bold=False, italic=False)
+
 		end_square.x = endx
 		end_square.y = endy
 
@@ -436,6 +435,7 @@ def tick(keys):
 		camera.draw(character)
 		camera.draw(end_square)
 		camera.draw(health_bar)
+		camera.draw(score_text)
 
 	elif game_state == gameState.NEXT_LEVEL:
 		# Set camera to viewing center of start screen, just so that when we start everything is all good
@@ -445,7 +445,7 @@ def tick(keys):
 		if pygame.K_SPACE in keys:
 			walls.clear()
 			enemies.clear()
-			projectiles.clear()
+			enemy_projectiles.clear()
 			fin_map.clear()
 			connected_rooms.clear()
 			lst.clear()
@@ -459,11 +459,11 @@ def tick(keys):
 		camera.y == CAMERAY//2
 		camera.x == CAMERAX//2
 		instructions_text = gamebox.from_text(camera.x, camera.y, "You are dead. Press R to play again!", 50, "red", bold=False, italic=False)
-		score_text = gamebox.from_text(camera.x, camera.y + 100, "Score:" + score, 50, "red", bold=False, italic=False)
+		score_text = gamebox.from_text(camera.x, camera.y + 100, "Score: " + str(score), 50, "red", bold=False, italic=False)
 		if pygame.K_r in keys:
 			walls.clear()
 			enemies.clear()
-			projectiles.clear()
+			enemy_projectiles.clear()
 			fin_map.clear()
 			connected_rooms.clear()
 			lst.clear()
