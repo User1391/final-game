@@ -72,6 +72,7 @@ class Projectile:
 		self.damage = damage
 		self.curr_pos = curr_pos
 		self.target_pos = target_pos
+		self.start_pos = curr_pos
 
 
 ### FUNCTIONS ###
@@ -369,17 +370,22 @@ def tick(keys):
 		for enemy in enemies:
 			camera.draw(gamebox.from_color(enemy.curr_square[0] * BLOCKSIZE, enemy.curr_square[1] * BLOCKSIZE, "green", 20, 20))
 
-			if dist_tuples(enemy.curr_square,(character.x / BLOCKSIZE, character.y / BLOCKSIZE)) <= 10 and can_shoot:
+			if dist_tuples(enemy.curr_square,(character.x / BLOCKSIZE, character.y / BLOCKSIZE)) <= ENEMY_RANGE and can_shoot:
 				target_x = (enemy.curr_square[0] * BLOCKSIZE - character.x) / dist_tuples((enemy.curr_square[0] * BLOCKSIZE, enemy.curr_square[1] * BLOCKSIZE),(character.x, character.y)) * ENEMY_RANGE
 				target_y = (enemy.curr_square[1] * BLOCKSIZE - character.y) / dist_tuples((enemy.curr_square[0] * BLOCKSIZE, enemy.curr_square[1] * BLOCKSIZE),(character.x, character.y)) * ENEMY_RANGE
-				enemy_projectiles.append(Projectile(20, (enemy.curr_square[0] * BLOCKSIZE, enemy.curr_square[1] * BLOCKSIZE), (character.x, character.y)))
-		
+				target_x = target_x / dist_tuples(enemy.curr_square,(character.x / BLOCKSIZE, character.y / BLOCKSIZE)) * ENEMY_RANGE
+				target_y = target_y / dist_tuples(enemy.curr_square,(character.x / BLOCKSIZE, character.y / BLOCKSIZE)) * ENEMY_RANGE
+				enemy_projectiles.append(Projectile(20, (enemy.curr_square[0] * BLOCKSIZE, enemy.curr_square[1] * BLOCKSIZE), (target_x, target_y)))
+				
+
+
 		to_remove_proj = []
 		for proj in enemy_projectiles:
 			removed = False
 
 			curr_x, curr_y = proj.curr_pos[0], proj.curr_pos[1] 
 			tar_x, tar_y = proj.target_pos[0], proj.target_pos[1]
+			start_x, start_y = proj.start_pos[0], proj.start_pos[1]
 
 			final_x, final_y = 0, 0
 			
