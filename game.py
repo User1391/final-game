@@ -35,7 +35,7 @@ GAMENAME = "Frustration Factor"
 
 PATHWAY_ROOM_RADIUS = 5
 
-ENEMY_RANGE = 10
+ENEMY_RANGE = 7
 
 FRAME_SKIP = 10
 
@@ -325,24 +325,22 @@ def tick(keys):
 		# print(walls)
 
 		starting_room = random.choice(connected_rooms)
-		
-		
-
 		connected_rooms.remove(starting_room)
+
 		character.y = random.randint(starting_room[1], starting_room[1] + starting_room[3] - 1) * BLOCKSIZE
 		character.x = random.randint(starting_room[0], starting_room[0] + starting_room[2] - 1) * BLOCKSIZE
-		camera.y = character.y 
-		camera.x = character.x 
-		ending_room = random.choice(connected_rooms)
-		connected_rooms.remove(ending_room)
-		end_square.y = random.randint(starting_room[1], starting_room[1] + starting_room[3] - 1) * BLOCKSIZE
-		end_square.x = random.randint(starting_room[0], starting_room[0] + starting_room[2] - 1) * BLOCKSIZE
+		end_coord_pos = random_pos_tuple(ending_room)
+		end_square.x = end_coord_pos[0] * BLOCKSIZE
+		end_square.y = end_coord_pos[1] * BLOCKSIZE
+		#print(end_square.x/50,end_square.y/50)
 		while dist_tuples((end_square.x, end_square.y), (character.x, character.y)) <= MIN_ENDING_DIST * BLOCKSIZE:
-			ending_room = random.choice(connected_rooms)
-			endy = ending_room[1] * BLOCKSIZE
-			endx = ending_room[0] * BLOCKSIZE
-			end_square.y = endy		
-			end_square.x = endx
+			starting_room = random.choice(connected_rooms)
+			connected_rooms.remove(starting_room)
+			character.y = random.randint(starting_room[1], starting_room[1] + starting_room[3] - 1) * BLOCKSIZE
+			character.x = random.randint(starting_room[0], starting_room[0] + starting_room[2] - 1) * BLOCKSIZE
+		camera.y = character.y 
+		camera.x = character.x
+		#print("Character", character.x/50, character.y/50)
 
 		#print("End",end_square.x, end_square.y)
 		######################################################
@@ -387,8 +385,11 @@ def tick(keys):
 
 		# Character firing
 		if can_shoot_human and pygame.K_SPACE in keys:
+			#print(camera.mouse)
 			human_count = 0
-			human_projectiles.append(Projectile(20, (character.x, character.y), (camera.mousex, camera.mousey)))
+			#target_x = character.x + ((camera.mousex - character.x) * (dist_tuples((int(camera.mouse[0]/BLOCKSIZE),int(camera.mouse[1]/BLOCKSIZE)),(character.x / BLOCKSIZE, character.y / BLOCKSIZE)) * ENEMY_RANGE))
+			#target_y = character.y + ((camera.mousey - character.y) * (dist_tuples((int(camera.mouse[0]/BLOCKSIZE),int(camera.mouse[1]/BLOCKSIZE)),(character.x / BLOCKSIZE, character.y / BLOCKSIZE)) * ENEMY_RANGE))
+			human_projectiles.append(Projectile(50, (character.x, character.y), (camera.mousex, camera.mousey)))
 
 
 		#TODO: Group walls together	for projectile optimization
@@ -404,15 +405,7 @@ def tick(keys):
 			camera.draw(gamebox.from_color(enemy.curr_square[0] * BLOCKSIZE, enemy.curr_square[1] * BLOCKSIZE, "green", 20, 20))
 			
 
-
-			# TODO: Add check for if player projectile hits and check if health <= 0 (and die if so)
-
-
 			if dist_tuples(enemy.curr_square,(character.x / BLOCKSIZE, character.y / BLOCKSIZE)) <= ENEMY_RANGE and can_shoot:
-				# target_x = (enemy.curr_square[0] * BLOCKSIZE - character.x) / dist_tuples((enemy.curr_square[0] * BLOCKSIZE, enemy.curr_square[1] * BLOCKSIZE),(character.x, character.y)) * ENEMY_RANGE
-				# target_y = (enemy.curr_square[1] * BLOCKSIZE - character.y) / dist_tuples((enemy.curr_square[0] * BLOCKSIZE, enemy.curr_square[1] * BLOCKSIZE),(character.x, character.y)) * ENEMY_RANGE
-				# target_x = target_x / dist_tuples(enemy.curr_square,(character.x / BLOCKSIZE, character.y / BLOCKSIZE)) * ENEMY_RANGE
-				# target_y = target_y / dist_tuples(enemy.curr_square,(character.x / BLOCKSIZE, character.y / BLOCKSIZE)) * ENEMY_RANGE
 				target_x = enemy.curr_square[0] * BLOCKSIZE + ((character.x - enemy.curr_square[0] * BLOCKSIZE) * (dist_tuples(enemy.curr_square,(character.x / BLOCKSIZE, character.y / BLOCKSIZE)) * ENEMY_RANGE))
 				target_y = enemy.curr_square[1] * BLOCKSIZE + ((character.y - enemy.curr_square[1] * BLOCKSIZE) * (dist_tuples(enemy.curr_square,(character.x / BLOCKSIZE, character.y / BLOCKSIZE)) * ENEMY_RANGE))
 				enemy_projectiles.append(Projectile(20, (enemy.curr_square[0] * BLOCKSIZE, enemy.curr_square[1] * BLOCKSIZE), (target_x, target_y)))
@@ -466,7 +459,7 @@ def tick(keys):
 
 			final_x, final_y = 0, 0
 			
-			if dist_tuples(proj.curr_pos,(character.x, character.y)) <= BLOCKSIZE // 2:
+			if dist_tuples(proj.curr_pos,(character.x, character.y)) <= CHARACTERSIZE // 2:
 				current_health -= proj.damage
 				to_remove_proj.append(proj)
 
@@ -560,7 +553,6 @@ def tick(keys):
 			game_state = gameState.GEN_MAP
 
 		camera.draw(instructions_text)
-
 
 	count += 1
 	human_count += 1 
