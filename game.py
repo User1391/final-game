@@ -1,18 +1,39 @@
 # Maxwell John Penders | pye3yh
 
+''' 
+Checkpoint 1
+Overall game description:
+My goal is to create a roguelike RPG in which the character has a ranged weapon. There will be no win state for the game, as it will go forever until the character dies.
+The character will be able to pick up items and gain levels, which will increase the character's skills. Most importantly, each level will have a random generation,
+so each playthrough is unique.
+
+The Five Main Requirements:
+User Input - The player will have movement control through the WASD keys and control over other actions through other keyboard keys.
+Start Screen - There will be a start screen with game name, name and ID, and basic game instructions
+Game Over - Once the player's health reaches 0, they will die and see the Game Over screen
+Small Enough Window - The window size will be set to 800x600
+Graphics - I will use appropriate sprite graphics and overall graphical themes
+
+At Least 4 for Secondary Requirements:
+Enemies - The player will have to fight against enemies to win
+Scrolling Level - In order to access the full map, the map will scroll to follow the player
+Health Bar - the player will have a health bar that will end the game once it reaches 0
+Multiple Levels - the game will have infinite levels that can generate one after another
+'''
+
 import gamebox
 import pygame
 import random
 import math
 from enum import Enum
-import fov
 import sys
 
-sys.setrecursionlimit(10**6)
-
 ### CONTANTS ###
+# Okay, so just to clarify, the first language I ever learned was Java, so I uppercase all my constants like all the cool kids
 
 GAMENAME = "Frustration Factor"
+
+PATHWAY_ROOM_RADIUS = 5
 
 ENEMY_RANGE = 10
 
@@ -50,6 +71,8 @@ SIZE = 100
 MIN_CONN_DISTANCE = 20
 
 ### CLASSES ###
+
+# Please be okay with enum, it's so nice
 class gameState(Enum):
 	MENU = 1
 	GEN_MAP = 2
@@ -60,7 +83,7 @@ class gameState(Enum):
 	DEAD = 7
 	ADD_ENEMIES = 8
 
-
+# Yeah, so I've done coding before this class. If it's really not okay to do this, tell me, but it'll be a pain to switch to lists
 class Enemy:
 	def __init__(self, health: int = 100, curr_square: tuple = (0,0), target_square: tuple = (0,0)):
 		self.health = health
@@ -79,13 +102,23 @@ class Projectile:
 
 # MUST BE ODD-SIZED DIMENSIONS LARGER THAN 100 x 100
 
+def center_of_rect(rect_tuple):
+	'''
+	Takes in a rectangular tuple (top left x-cord, top left y-cord, x length, y length) and returns the approximate center pixel
+	'''
+	x_coord = rect_tuple[0] + rect_tuple[2]//2
+	y_coord = rect_tuple[1] + rect_tuple[3]//2
+	return (x_coord, y_coord)
+
+
 def random_pos_tuple(rect_tuple):
 	'''
 	Takes in a rectangular tuple (top left x-cord, top left y-cord, x length, y length) and outputs a random position within
 	'''
 	return (rect_tuple[0] + random.randint(0, rect_tuple[2] - 1), rect_tuple[1] + random.randint(0, rect_tuple[3] - 1))
 
-
+# I got this great idea from https://journal.stuffwithstuff.com/2014/12/21/rooms-and-mazes/
+# I wrote all of this code myself, though, without looking at any sort of code for it
 def generate_rooms(xdist, ydist):
 	'''
 	Takes in the x and y distances for the map to be generated and returns a generated map and room list
@@ -154,31 +187,29 @@ def generate_path(start_coords, end_coords):
 			node = (node[0],node[1] - 1 + 2 * (total_y > 0))
 		
 
-lst = []
 
-def generate_pathways(idx=1):
+lst = []
+def generate_pathways():
 	'''
-	Recursive function that outputs a map with single pathways drawn between rooms
+	Function that outputs a map using a BFS algorithm
 	'''
 	num_rooms = len(globals()["rooms"])
-	if len(globals()["lst"]) == 0:
-		globals()["lst"] = num_rooms * [0]
-	idx_offset, rand2 = random.randint(1, 10), random.randint(0, max(idx - 1, 0))
-	newidx = min(num_rooms - 1, idx + idx_offset)
-	if (globals()["lst"][newidx] == 0):
-		start_coords = (globals()["rooms"][newidx][0] + random.randint(0, globals()["rooms"][newidx][2] - 1), globals()["rooms"][newidx][1] + random.randint(0, globals()["rooms"][newidx][3] - 1))
-		end_coords = (globals()["rooms"][idx][0] + random.randint(0, globals()["rooms"][idx][2] - 1), globals()["rooms"][idx][1] + random.randint(0, globals()["rooms"][idx][3] - 1))
-		if (dist_tuples(start_coords, end_coords) >= MIN_CONN_DISTANCE):
-			globals()["lst"][newidx] = 1
-			generate_path(start_coords, end_coords)
-			globals()["connected_rooms"].append(globals()["rooms"][newidx])
-			globals()["connected_rooms"].append(globals()["rooms"][idx])
-		if(newidx != num_rooms):
-			generate_pathways(newidx)
-	# if (globals()["lst"][rand2] == 0):
-	# 	#print(f"{idx} connected to {rand2}")
-	# 	globals()["lst"][rand2] = 1
-	# 	generate_pathways(rand2)
+	all_rooms = globals()["rooms"]
+	visited_rooms = []
+	queue = []
+	last_room = all_rooms.pop()
+	globals()["ending_room"] = last_room
+	queue.append(last_room)
+	while queue:
+		queued_room = queue.pop(0)
+		for ind_room in all_rooms:
+			if ind_room not in visited_rooms and dist_tuples(center_of_rect(ind_room),center_of_rect(queued_room)) <= PATHWAY_ROOM_RADIUS * BLOCKSIZE:
+				generate_path(center_of_rect(queued_room), center_of_rect(ind_room))
+				globals()["lst"].append([queued_room, ind_room])
+				globals()["connected_rooms"].append(ind_room)
+				queue.append(ind_room)
+				all_rooms.remove(ind_room)
+				visited_rooms.append(ind_room)
 
 	return fin_map, rooms
 
@@ -189,6 +220,7 @@ def dist_tuples(tuple1, tuple2):
 	return math.sqrt(math.pow(tuple2[0] - tuple1[0], 2) + math.pow(tuple2[1] - tuple1[1], 2)) 
 
 ### GAMEBOX VARIABLES ###
+# Enjoy trying to read through this, my favorite TA! Definitely don't have excess variables!
 
 camera = gamebox.Camera(CAMERAX, CAMERAY)
 camera.y = 0
@@ -196,6 +228,7 @@ enemy_projectiles = []
 human_projectiles = []
 enemies = []
 current_health = 100
+# Right, so it's called fin_map because map is an actual thing in python
 fin_map = []
 walls = []
 connected_rooms = []
@@ -203,32 +236,20 @@ score = 1
 character = gamebox.from_color(0, 0, "blue",CHARACTERSIZE, CHARACTERSIZE)
 endx = 0
 endy = 0
-end_square = gamebox.from_color(endx, endy, "yellow",BLOCKSIZE, BLOCKSIZE)
+end_square = gamebox.from_color(endx, endy, "yellow",BLOCKSIZE-1, BLOCKSIZE-1)
 health_bar = gamebox.from_color(0, 0, "red", current_health * 2, 20)
 count = 1
 can_shoot = False
+ending_room = []
+human_count = 1
+can_shoot_human = False
 
 game_state = gameState.MENU
 
 ### MAIN CODE BEGINS ###
 
-# map, rooms = generate_rooms(MAPX, MAPY)
-# generate_pathways()
-# for longboi in map:
-# 	for rum in longboi:
-# 		print(rum,end='')
-# 	print("")
-
-# Gamebox loop
-# fin_map, rooms = generate_rooms(100, 100)
-# fin_map, rooms = generate_pathways()
-# for line in fin_map:
-# 	for thing in line:
-# 		print(thing,end='')
-# 	print("")
-
 def tick(keys):
-	global game_state, fin_map, MAPX, MAPY, walls, enemies, projectiles, current_health, BLOCKSIZE, character, score, connected_rooms, lst, endx, endy, health_bar, count, can_shoot
+	global game_state, fin_map, MAPX, MAPY, walls, enemies, enemy_projectiles, human_projectiles,current_health, BLOCKSIZE, character, score, connected_rooms, lst, endx, endy, health_bar, count, can_shoot, ending_room, human_count, can_shoot_human
 
 	camera.clear("white")
 
@@ -236,6 +257,11 @@ def tick(keys):
 		can_shoot = True
 	else:
 		can_shoot = False
+
+	if human_count > FRAME_SKIP:
+		can_shoot_human = True
+	else:
+		can_shoot_human = False
 
 	# Menu display
 	if game_state == gameState.MENU:
@@ -318,6 +344,7 @@ def tick(keys):
 			end_square.y = endy		
 			end_square.x = endx
 
+		#print("End",end_square.x, end_square.y)
 		######################################################
 
 		# Adding enemies
@@ -358,6 +385,12 @@ def tick(keys):
 		if pygame.K_w in keys:
 			character.y -= MOVEMENT_SPEED
 
+		# Character firing
+		if can_shoot_human and pygame.K_SPACE in keys:
+			human_count = 0
+			human_projectiles.append(Projectile(20, (character.x, character.y), (camera.mousex, camera.mousey)))
+
+
 		#TODO: Group walls together	for projectile optimization
 		for wall in walls:
 			if character.touches(wall):
@@ -369,15 +402,59 @@ def tick(keys):
 
 		for enemy in enemies:
 			camera.draw(gamebox.from_color(enemy.curr_square[0] * BLOCKSIZE, enemy.curr_square[1] * BLOCKSIZE, "green", 20, 20))
+			
+
+
+			# TODO: Add check for if player projectile hits and check if health <= 0 (and die if so)
+
 
 			if dist_tuples(enemy.curr_square,(character.x / BLOCKSIZE, character.y / BLOCKSIZE)) <= ENEMY_RANGE and can_shoot:
-				target_x = (enemy.curr_square[0] * BLOCKSIZE - character.x) / dist_tuples((enemy.curr_square[0] * BLOCKSIZE, enemy.curr_square[1] * BLOCKSIZE),(character.x, character.y)) * ENEMY_RANGE
-				target_y = (enemy.curr_square[1] * BLOCKSIZE - character.y) / dist_tuples((enemy.curr_square[0] * BLOCKSIZE, enemy.curr_square[1] * BLOCKSIZE),(character.x, character.y)) * ENEMY_RANGE
-				target_x = target_x / dist_tuples(enemy.curr_square,(character.x / BLOCKSIZE, character.y / BLOCKSIZE)) * ENEMY_RANGE
-				target_y = target_y / dist_tuples(enemy.curr_square,(character.x / BLOCKSIZE, character.y / BLOCKSIZE)) * ENEMY_RANGE
+				# target_x = (enemy.curr_square[0] * BLOCKSIZE - character.x) / dist_tuples((enemy.curr_square[0] * BLOCKSIZE, enemy.curr_square[1] * BLOCKSIZE),(character.x, character.y)) * ENEMY_RANGE
+				# target_y = (enemy.curr_square[1] * BLOCKSIZE - character.y) / dist_tuples((enemy.curr_square[0] * BLOCKSIZE, enemy.curr_square[1] * BLOCKSIZE),(character.x, character.y)) * ENEMY_RANGE
+				# target_x = target_x / dist_tuples(enemy.curr_square,(character.x / BLOCKSIZE, character.y / BLOCKSIZE)) * ENEMY_RANGE
+				# target_y = target_y / dist_tuples(enemy.curr_square,(character.x / BLOCKSIZE, character.y / BLOCKSIZE)) * ENEMY_RANGE
+				target_x = enemy.curr_square[0] * BLOCKSIZE + ((character.x - enemy.curr_square[0] * BLOCKSIZE) * (dist_tuples(enemy.curr_square,(character.x / BLOCKSIZE, character.y / BLOCKSIZE)) * ENEMY_RANGE))
+				target_y = enemy.curr_square[1] * BLOCKSIZE + ((character.y - enemy.curr_square[1] * BLOCKSIZE) * (dist_tuples(enemy.curr_square,(character.x / BLOCKSIZE, character.y / BLOCKSIZE)) * ENEMY_RANGE))
 				enemy_projectiles.append(Projectile(20, (enemy.curr_square[0] * BLOCKSIZE, enemy.curr_square[1] * BLOCKSIZE), (target_x, target_y)))
-				
 
+			if enemy.health <= 0:
+				enemies.remove(enemy)
+		
+		to_remove_proj_hum = []
+		for proj in human_projectiles:
+			removed = False
+			curr_x, curr_y = proj.curr_pos[0], proj.curr_pos[1] 
+			tar_x, tar_y = proj.target_pos[0], proj.target_pos[1]
+			start_x, start_y = proj.start_pos[0], proj.start_pos[1]
+
+			final_x, final_y = 0, 0
+
+			for enemy in enemies:
+				if dist_tuples(proj.curr_pos,(enemy.curr_square[0] * BLOCKSIZE, enemy.curr_square[1] * BLOCKSIZE)) <= BLOCKSIZE // 2:
+					enemy.health -= proj.damage
+					to_remove_proj_hum.append(proj)
+
+			total_dist = dist_tuples(proj.target_pos, proj.curr_pos)
+
+			if total_dist >= PROJ_SPEED:
+				dy = (tar_y - curr_y) / total_dist * PROJ_SPEED
+				dx = (tar_x - curr_x) / total_dist * PROJ_SPEED
+
+				final_x += round(dx)
+				final_y += round(dy)
+
+				proj.curr_pos = (curr_x + final_x, curr_y + final_y)
+				camera.draw(gamebox.from_color(proj.curr_pos[0], proj.curr_pos[1], "orange", 5, 5))
+			else:
+				to_remove_proj_hum.append(proj)
+				removed = True
+		
+			if not removed and fin_map[int(proj.curr_pos[1]//BLOCKSIZE)][int(proj.curr_pos[0]//BLOCKSIZE)] == 1:
+				to_remove_proj_hum.append(proj)
+
+		to_remove_proj_hum = list(dict.fromkeys(to_remove_proj_hum))
+		for to_remove in to_remove_proj_hum:
+			human_projectiles.remove(to_remove)
 
 		to_remove_proj = []
 		for proj in enemy_projectiles:
@@ -389,10 +466,11 @@ def tick(keys):
 
 			final_x, final_y = 0, 0
 			
-			if dist_tuples(proj.curr_pos,(character.x, character.y)) <= CHARACTERSIZE // 2:
+			if dist_tuples(proj.curr_pos,(character.x, character.y)) <= BLOCKSIZE // 2:
 				current_health -= proj.damage
+				to_remove_proj.append(proj)
 
-			total_dist = ((tar_y - curr_y)**2 + (tar_x - curr_x)**2) ** 0.5
+			total_dist = dist_tuples(proj.target_pos, proj.curr_pos)
 
 			if total_dist >= PROJ_SPEED:
 				dy = (tar_y - curr_y) / total_dist * PROJ_SPEED
@@ -407,10 +485,10 @@ def tick(keys):
 				to_remove_proj.append(proj)
 				removed = True
 		
-			if not removed and fin_map[proj.curr_pos[1]//BLOCKSIZE][proj.curr_pos[0]//BLOCKSIZE] == 1:
+			if not removed and fin_map[int(proj.curr_pos[1]//BLOCKSIZE)][int(proj.curr_pos[0]//BLOCKSIZE)] == 1:
 				to_remove_proj.append(proj)
 
-
+		to_remove_proj = list(dict.fromkeys(to_remove_proj))
 		for to_remove in to_remove_proj:
 			enemy_projectiles.remove(to_remove)
 			
@@ -419,6 +497,7 @@ def tick(keys):
 			score += 1
 			current_health = 100
 			count = 1
+			human_count = 1
 			game_state = gameState.NEXT_LEVEL
 
 		camera.y = character.y 
@@ -432,8 +511,8 @@ def tick(keys):
 
 		score_text = gamebox.from_text(camera.x + 350, camera.y + 250, str(score), 50, "red", bold=False, italic=False)
 
-		end_square.x = endx
-		end_square.y = endy
+		# IDK this end square is on drugs or something
+		# w
 
 		if current_health <= 0:
 			game_state = gameState.DEAD
@@ -476,6 +555,7 @@ def tick(keys):
 			score = 1
 			current_health = 100
 			count = 1
+			human_count = 1
 
 			game_state = gameState.GEN_MAP
 
@@ -483,6 +563,7 @@ def tick(keys):
 
 
 	count += 1
+	human_count += 1 
 	camera.display()
 
 gamebox.timer_loop(30, tick)
