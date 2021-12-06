@@ -402,6 +402,18 @@ def tick(keys):
 			camera.draw(wall)
 
 		for enemy in enemies:
+			
+			if count % 20 == 0:
+				rand_dir = random.randint(1,4)
+				if rand_dir == 1 and fin_map[enemy.curr_square[1] + 1][enemy.curr_square[0]] == 0:
+					enemy.curr_square = (enemy.curr_square[0], enemy.curr_square[1] + 1)
+				if rand_dir == 2 and fin_map[enemy.curr_square[1] - 1][enemy.curr_square[0]] == 0:
+					enemy.curr_square = (enemy.curr_square[0], enemy.curr_square[1] - 1)
+				if rand_dir == 3 and fin_map[enemy.curr_square[1]][enemy.curr_square[0] + 1] == 0:
+					enemy.curr_square = (enemy.curr_square[0] + 1, enemy.curr_square[1])
+				if rand_dir == 4 and fin_map[enemy.curr_square[1]][enemy.curr_square[0] - 1] == 0:
+					enemy.curr_square = (enemy.curr_square[0] - 1, enemy.curr_square[1])
+
 			camera.draw(gamebox.from_color(enemy.curr_square[0] * BLOCKSIZE, enemy.curr_square[1] * BLOCKSIZE, "green", 20, 20))
 			
 
